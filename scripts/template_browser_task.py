@@ -1,138 +1,83 @@
 #!/usr/bin/env python3
 """
-Browser Task Template - Reusable Chrome Automation Script
+Browser Task Template - Reusable Chrome Automation Script (Selenium Version)
 
 Usage:
     python template_browser_task.py
-
-Requirements:
-    pip install requests websocket-client
 """
 
-import subprocess
-import time
-import json
 import os
-import base64
-import requests
-import websocket
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
+# 匯入並執行依賴檢查
+from utils.dependency_handler import check_and_install_dependencies
+check_and_install_dependencies()
 
 # ─── Configuration ──────────────────────────────────────────────────────────
-CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-DEBUG_PORT  = 9222
 TASK_NAME   = "template_task"          # Change to your task name
 
 SKILL_DIR       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCREENSHOTS_DIR = os.path.join(SKILL_DIR, "screenshots", TASK_NAME)
-START_CHROME_BAT = os.path.join(SKILL_DIR, "scripts", "start_chrome_debug.bat")
 # ────────────────────────────────────────────────────────────────────────────
-
-
-def start_chrome():
-    """Start Chrome with remote debugging using the batch script."""
-    print("Starting Chrome with remote debugging...")
-    if not os.path.exists(START_CHROME_BAT):
-        print(f"Error: {START_CHROME_BAT} not found!")
-        exit(1)
-    
-    # Execute the batch script
-    subprocess.Popen([START_CHROME_BAT], shell=True)
-    print("Waiting for Chrome to start...")
-    time.sleep(6)
-
-
-def ensure_chrome():
-    """Start Chrome if not already running with debug port."""
-    try:
-        requests.get(f"http://127.0.0.1:{DEBUG_PORT}/json/version", timeout=2)
-        print("Chrome already running with debug port.")
-    except Exception:
-        print("Chrome is not running. Starting Chrome...")
-        start_chrome()
-
-
-def get_ws_url():
-    """Get WebSocket URL of the first open page."""
-    resp = requests.get(f"http://127.0.0.1:{DEBUG_PORT}/json", timeout=5)
-    pages = resp.json()
-    if not pages:
-        raise RuntimeError("No open pages found in Chrome.")
-    return pages[0]["webSocketDebuggerUrl"]
-
-
-def send_command(ws, method, params=None, cmd_id=1):
-    """Send a CDP command and wait for its response."""
-    msg = json.dumps({"id": cmd_id, "method": method, "params": params or {}})
-    ws.send(msg)
-    for _ in range(100):  # wait up to 10s
-        resp = json.loads(ws.recv())
-        if resp.get("id") == cmd_id:
-            return resp
-    raise TimeoutError(f"No response for CDP command: {method}")
-
-
-def navigate(ws, url, cmd_id):
-    """Navigate to URL and wait for page load."""
-    print(f"  → Navigating to {url}")
-    send_command(ws, "Page.navigate", {"url": url}, cmd_id)
-    time.sleep(2)
-    return cmd_id + 1
-
-
-def screenshot(ws, filename, cmd_id):
-    """Take a screenshot and save to SCREENSHOTS_DIR."""
-    os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
-    resp = send_command(ws, "Page.captureScreenshot", {"format": "png"}, cmd_id)
-    path = os.path.join(SCREENSHOTS_DIR, filename)
-    with open(path, "wb") as f:
-        f.write(base64.b64decode(resp["result"]["data"]))
-    print(f"  📸 Screenshot saved: screenshots/{TASK_NAME}/{filename}")
-    return cmd_id + 1
-
-
-def evaluate(ws, js_expression, cmd_id):
-    """Execute JavaScript in the page and return the result."""
-    resp = send_command(ws, "Runtime.evaluate", {"expression": js_expression}, cmd_id)
-    result = resp.get("result", {}).get("result", {}).get("value")
-    return result, cmd_id + 1
-
 
 def run():
     os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
-    ensure_chrome()
+    
+    # 設定 Chrome 選項
+    chrome_options = Options()
+    # chrome_options.add_argument("--headless")  # 如需無頭模式請取消註解
+    
+    # 初始化 WebDriver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    
+    try:
+        # ─── Task Steps ─────────────────────────────────────────────────────────
+        # TODO: 使用 Selenium 語法實作您的任務
 
-    ws = websocket.create_connection(get_ws_url())
-    cmd_id = 1
+        # 步驟 1: 導覽至目標網址
+        print("步驟 1: 導覽至 Google")
+        driver.get("https://www.google.com")
+        time.sleep(2)
+        driver.save_screenshot(os.path.join(SCREENSHOTS_DIR, "01_start.png"))
+        print(f"  📸 截圖已儲存: 01_start.png")
 
-    # ─── Task Steps ─────────────────────────────────────────────────────────
-    # TODO: Replace with your actual task steps
+        # 步驟 2: 互動示範
+        print("步驟 2: 執行動作 (範例：查詢)")
+        # search_box = driver.find_element(By.NAME, "q")
+        # search_box.send_keys("Selenium automation")
+        # search_box.submit()
+        print("  (此處為範例，暫不執行實際互動)")
+        time.sleep(2)
+        driver.save_screenshot(os.path.join(SCREENSHOTS_DIR, "02_after_action.png"))
+        print(f"  📸 截圖已儲存: 02_after_action.png")
 
-    # Step 1: Navigate
-    print("Step 1: Navigate to target URL")
-    cmd_id = navigate(ws, "https://www.google.com", cmd_id)
-    cmd_id = screenshot(ws, "01_start.png", cmd_id)
+        # 步驟 3: 提取結果
+        print("步驟 3: 提取結果")
+        print(f"  頁面標題: {driver.title}")
+        driver.save_screenshot(os.path.join(SCREENSHOTS_DIR, "03_final.png"))
+        print(f"  📸 截圖已儲存: 03_final.png")
+        
+        # 範例：如何處理原生 JS 對話框
+        # try:
+        #     alert = driver.switch_to.alert
+        #     print(f"偵測到對話框: {alert.text}")
+        #     alert.accept()
+        # except:
+        #     pass
 
-    # Step 2: Interact
-    print("Step 2: Perform actions")
-    _, cmd_id = evaluate(ws, """
-        // Example: fill search box
-        // document.querySelector('input[name=q]').value = 'search query';
-        // document.querySelector('form').submit();
-        'TODO: replace with actual interaction'
-    """, cmd_id)
-    time.sleep(2)
-    cmd_id = screenshot(ws, "02_after_action.png", cmd_id)
+        # ─────────────────────────────────────────────────────────────────────────
 
-    # Step 3: Extract result
-    print("Step 3: Extract result")
-    result, cmd_id = evaluate(ws, "document.title", cmd_id)
-    print(f"  Result: {result}")
-    cmd_id = screenshot(ws, "03_final.png", cmd_id)
-    # ─────────────────────────────────────────────────────────────────────────
-
-    ws.close()
-    print(f"\n✅ Done! Screenshots: {SCREENSHOTS_DIR}")
-
+    except Exception as e:
+        print(f"❌ 發生錯誤: {e}")
+    finally:
+        time.sleep(2)
+        driver.quit()
+        print(f"\n✅ 完成！截圖儲存於: {SCREENSHOTS_DIR}")
 
 if __name__ == "__main__":
     run()

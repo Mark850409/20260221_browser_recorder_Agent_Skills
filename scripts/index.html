@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自動化測試範例</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>自動化測試對話框</h1>
+        <button id="agree-btn" onclick="handleAgree()">同意</button>
+        <p id="status"></p>
+    </div>
+
+    <script>
+        function handleAgree() {
+            const result = window.confirm("您確定要同意嗎？");
+            const statusElement = document.getElementById('status');
+            if (result) {
+                statusElement.innerText = "您點擊了確定";
+                statusElement.style.color = "green";
+            } else {
+                statusElement.innerText = "您點擊了取消";
+                statusElement.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
